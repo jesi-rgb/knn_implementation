@@ -10,75 +10,73 @@ cancer_link <- "https://resources.oreilly.com/examples/9781784393908/raw/ac9fe41
 bcd <- read.csv(cancer_link)
 
 
-my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", normalize = TRUE){
+my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", normalize = TRUE, verbose = FALSE){
+  # Normalizing if the user so says...
   if(normalize){
     train_data = as.data.frame(lapply(train_data, scale, center = TRUE, scale = TRUE))
   }
   
+  # Checking if we have test data to use or not
   if(is.na(test)){
     test = train_data
   }
   
+  # Declaring our output vector
   prediction = vector("logical", length(test[,1]))
+  
+  # For every datapoint we want to know the category of:
   for(i in 1:nrow(test)){
-    distances = vector("logical", length(train_data[,1]))
-    labels = vector("logical", length(train_data[,1]))
+    if(verbose)
+      print(paste("Going for test sample ", i))
+    
+    # We extract said datapoint
     sample = test[i,]
     
-    for (j in 1:nrow(train_data)){
-      sample_dist = distance(rbind(sample, train_data[j,]), method = metric)
-      distances[[j]] = sample_dist[1]
-      # labels[[j]] = train_labels[j] # dont need
-    }
+    # We create a two column, long dataframe that contains on one column
+    # every point in train_data, and on the other column the current
+    # sample we are processing. 
+    rbinds = apply(train_data, MARGIN = 1, rbind, sample)
     
-    Vectorize(function(x, y, method){
-      return(distance(rbind(x, y), method))
-    })
+    # That step allows us to apply the distance function
+    # using lapply, which is orders of magnitude faster.
+    distances = lapply(rbinds, distance, metric)
     
-        
-    results <- as.data.frame(cbind(as.vector(distances), as.vector(I(labels))))
+    # Having the distances vector, we merge it with our labels
+    # to create a little helper dataframe and set its colnames.
+    results <- as.data.frame(cbind(as.vector(distances, "numeric"), 
+                                   as.vector(train_labels)))
     colnames(results) <- c("Distances", "Labels")
     
-    # print(results$Distances)
+    # We may now sort the results by distance and take only
+    # the k first.
     results = results[order(results$Distances),]
     k_results = results[1:k,]
     
+    # Having this little (k, 2) dataframe we can count
+    # how much each label appears, take the maximum and
+    # put it in the predictions array, to continue with the
+    # next sample in the test array.
     count = k_results %>% count(Labels)
-    
     predicted_category = count$Labels[which.max(count$n)]
     
     prediction[i] = predicted_category
   }
-  print(prediction)
   return(prediction)
 }
 
 
-my_dist <- Vectorize(function(x, y, method){
-  return(distance(rbind(x, y), method))
-})
+prediction = my_knn(bcd[3:(length(bcd)-1)], bcd$diagnosis, metric = "euclidean")
 
-# prediction = my_knn(bcd[3:(length(bcd)-1)], bcd$diagnosis, metric = "euclidean")
-
-prediction = my_knn(iris[1:(length(iris)-1)], iris$Species)
-
-pred_diag <- as.data.frame(cbind(prediction, bcd$diagnosis))
-
-colnames(pred_diag) <- c("prediction", "labels")
-
-(pred_diag %>% filter(prediction == labels) %>% count()) / dim(pred_diag[,0])
+# prediction = my_knn(iris[1:(length(iris)-1)], iris$Species)
+print(prediction)
+# pred_diag <- as.data.frame(cbind(prediction, iris$Species))
+# colnames(pred_diag) <- c("prediction", "labels")
+# 
+# accuracy <- (pred_diag %>% filter(prediction == labels) %>% count()) / dim(pred_diag[,0])
+# 
+# print(accuracy)
 
 
 
 
-
-Vectorize(function(x, y, method){
-  return(distance(rbind(x, y), method))
-})
-
-train_data = iris[1:(length(iris)-1)]
-test = train_data
-
-s <- data.frame(cbind(train_data$Sepal.Length, test$Sepal.Length))
-outer(s[[1]], s[[2]], Vectorize(function(x, y, method) distance(rbind(x, y), method)))
 
