@@ -23,7 +23,6 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
   
   # Declaring our output vector
   prediction = vector("logical", length(test[,1]))
-  
   # For every datapoint we want to know the category of:
   for(i in 1:nrow(test)){
     if(verbose)
@@ -47,6 +46,7 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
                                    as.vector(train_labels)))
     colnames(results) <- c("Distances", "Labels")
     
+    
     # We may now sort the results by distance and take only
     # the k first.
     results = results[order(results$Distances),]
@@ -58,23 +58,23 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
     # next sample in the test array.
     count = k_results %>% count(Labels)
     predicted_category = count$Labels[which.max(count$n)]
-    
+  
     prediction[i] = predicted_category
   }
   return(prediction)
 }
 
 
-prediction = my_knn(bcd[3:(length(bcd)-1)], bcd$diagnosis, metric = "euclidean")
+# prediction = my_knn(bcd[3:(length(bcd)-1)], bcd$diagnosis, metric = "euclidean")
 
-# prediction = my_knn(iris[1:(length(iris)-1)], iris$Species)
-print(prediction)
-# pred_diag <- as.data.frame(cbind(prediction, iris$Species))
-# colnames(pred_diag) <- c("prediction", "labels")
-# 
-# accuracy <- (pred_diag %>% filter(prediction == labels) %>% count()) / dim(pred_diag[,0])
-# 
-# print(accuracy)
+prediction = my_knn(iris[1:(length(iris)-1)], iris$Species)
+
+pred_diag <- data.frame(prediction, iris$Species)
+colnames(pred_diag) <- c("prediction", "labels")
+
+accuracy <- (pred_diag %>% filter(prediction == labels) %>% count()) / dim(pred_diag[,0])
+
+print(accuracy[[1]])
 
 
 
