@@ -33,19 +33,18 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
     
     # We create a two column, long dataframe that contains on one column
     # every point in train_data, and on the other column the current
-    # sample we are processing. 
+    # sample we are processing repeated as many times as the # of train
+    # data samples. 
     rbinds = apply(train_data, MARGIN = 1, rbind, sample)
     
     # That step allows us to apply the distance function
     # using lapply, which is orders of magnitude faster.
     distances = lapply(rbinds, distance, metric)
     
-    # Having the distances vector, we merge it with our labels
+    # Having the distances vector, we join it with our labels
     # to create a little helper dataframe and set its colnames.
-    results <- as.data.frame(cbind(as.vector(distances, "numeric"), 
-                                   as.vector(train_labels)))
-    colnames(results) <- c("Distances", "Labels")
-    
+    results = data.frame(as.vector(distances, "numeric"), as.vector(train_labels))
+    colnames(results) = c("Distances", "Labels")
     
     # We may now sort the results by distance and take only
     # the k first.
@@ -58,7 +57,7 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
     # next sample in the test array.
     count = k_results %>% count(Labels)
     predicted_category = count$Labels[which.max(count$n)]
-  
+    
     prediction[i] = predicted_category
   }
   return(prediction)
@@ -67,14 +66,14 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
 
 # prediction = my_knn(bcd[3:(length(bcd)-1)], bcd$diagnosis, metric = "euclidean")
 
-prediction = my_knn(iris[1:(length(iris)-1)], iris$Species)
+prediction = my_knn(iris[1:(length(iris)-1)], iris$Species, verbose = TRUE)
 
 pred_diag <- data.frame(prediction, iris$Species)
 colnames(pred_diag) <- c("prediction", "labels")
 
 accuracy <- (pred_diag %>% filter(prediction == labels) %>% count()) / dim(pred_diag[,0])
 
-print(accuracy[[1]])
+print(accuracy)
 
 
 
