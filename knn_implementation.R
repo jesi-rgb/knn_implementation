@@ -5,16 +5,17 @@
 # library(tidyverse)
 library(dplyr)
 library(philentropy)
-
+Sys.setenv(LANGUAGE='en')
 cancer_link <- "https://resources.oreilly.com/examples/9781784393908/raw/ac9fe41596dd42fc3877cfa8ed410dd346c43548/Machine%20Learning%20with%20R,%20Second%20Edition_Code/Chapter%2003/wisc_bc_data.csv"
 bcd <- read.csv(cancer_link)
 
 
-my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", normalize = TRUE, verbose = FALSE){
+my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", normalize = TRUE, verbose = TRUE){
   # Normalizing if the user so says...
   if(normalize){
     train_data = as.data.frame(lapply(train_data, scale, center = TRUE, scale = TRUE))
   }
+  
   
   # Checking if we have test data to use or not
   if(is.na(test)){
@@ -41,6 +42,7 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
     # using lapply, which is orders of magnitude faster.
     distances = lapply(rbinds, distance, metric)
     
+    
     # Having the distances vector, we join it with our labels
     # to create a little helper dataframe and set its colnames.
     results = data.frame(as.vector(distances, "numeric"), as.vector(train_labels))
@@ -63,19 +65,46 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
   return(prediction)
 }
 
+eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by=2), methods=c("euclidean", "manhattan"), verbose = 2){
+  method = vector(length = length(methods) * length(k_neighbors))
+  k_values = vector(length = length(methods) * length(k_neighbors))
+  accuracies = vector(length = length(methods) * length(k_neighbors))
+  
+  i = 0
+  for(method in methods){
+    if(verbose >= 1){
+      print(paste("Going for method", method))
+    }
+    
+    for(k in k_neighbors){
+      if(verbose == 2){
+        print(paste("Going for k", k))
+      }
+      
+      prediction = my_knn(train_data, train_labels, test=test, k=k, metric=method)
+      pred_diag = data.frame(prediction, train_labels)
+      colnames(pred_diag) = c("prediction", "labels")
+      
+      accuracy = (pred_diag %>% filter(prediction == labels) %>% count()) / dim(pred_diag[,0])
+
+      accuracies[i] = accuracy
+      k_values[i] = k
+      method[i] = method
+      i = i + 1
+    }
+  }
+  results = data.frame(method, k_values, accuracies)
+  colnames(results) = c("Method", "K", "Accuracy")
+  print(results)
+  plot(results)
+}
+
 
 # prediction = my_knn(bcd[3:(length(bcd)-1)], bcd$diagnosis, metric = "euclidean")
+# prediction = my_knn(iris[1:(length(iris)-1)], iris$Species, verbose = TRUE)
 
-prediction = my_knn(iris[1:(length(iris)-1)], iris$Species, verbose = TRUE)
-
-pred_diag <- data.frame(prediction, iris$Species)
-colnames(pred_diag) <- c("prediction", "labels")
-
-accuracy <- (pred_diag %>% filter(prediction == labels) %>% count()) / dim(pred_diag[,0])
-
-print(accuracy)
-
-
+# eval_knn(iris[1:(length(iris)-1)], iris$Species)
+eval_knn(bcd[1:50, 3:(length(bcd)-1)], bcd$diagnosis)
 
 
 
