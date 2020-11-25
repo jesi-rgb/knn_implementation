@@ -1,13 +1,6 @@
-# my_knn <- function(train, train_labels, test=NA, k=1, metric="euclidean")
-  
-
-
 library(tidyverse)
-library(dplyr)
 library(philentropy)
 library(reshape)
-
-# library(caret)
 
 Sys.setenv(LANGUAGE='en')
 cancer_link <- "https://resources.oreilly.com/examples/9781784393908/raw/ac9fe41596dd42fc3877cfa8ed410dd346c43548/Machine%20Learning%20with%20R,%20Second%20Edition_Code/Chapter%2003/wisc_bc_data.csv"
@@ -68,9 +61,9 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
   return(prediction)
 }
 
-eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by=2), metrics = c("euclidean", "manhattan"), verbose = 1, plot = TRUE){
-  methods = vector("logical", length = (length(metrics) * length(k_neighbors)))
-  k_values = vector("logical", length = (length(metrics) * length(k_neighbors)))
+eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by=2), metrics = c("euclidean", "manhattan"), verbose = 1){
+  methods = vector("character", length = (length(metrics) * length(k_neighbors)))
+  k_values = vector("numeric", length = (length(metrics) * length(k_neighbors)))
   accuracies = vector("numeric", length = (length(metrics) * length(k_neighbors)))
   
   i = 1
@@ -90,7 +83,6 @@ eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by
 
       accuracy = (pred_diag %>% filter(prediction == labels) %>% count()) / dim(pred_diag[,0])
       
-      
       accuracies[i] = accuracy
       k_values[i] = k
       methods[i] = m
@@ -99,18 +91,19 @@ eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by
   }
 
   results = data.frame(cbind(methods, k_values, accuracies))
+  results = as.data.frame(lapply(results, unlist))
   colnames(results) = c("Method", "K", "Accuracy")
   
-  if(plot){
+  
+  print(
     ggplot(results, aes(x = K, y = Accuracy, group = Method)) +
-      geom_line(aes(color = Method)) + 
+      geom_line(aes(color = Method)) +
       geom_point(aes(color = Method))
-  }
+  )
+  
   return(results)
 }
 
+results = suppressMessages(eval_knn(bcd[1:50, 3:(length(bcd)-1)], bcd$diagnosis[1:50], k_neighbors=seq(5, 19, by=2), metrics = c("pearson", "euclidean", "manhattan")))
 
-results = suppressMessages(eval_knn(bcd[1:50, 3:(length(bcd)-1)], bcd$diagnosis[1:50], metrics = c("pearson", "euclidean", "manhattan")))
-
-  
 
