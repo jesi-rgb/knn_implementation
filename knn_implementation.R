@@ -5,12 +5,14 @@
 # library(tidyverse)
 library(dplyr)
 library(philentropy)
+# library(caret)
+
 Sys.setenv(LANGUAGE='en')
 cancer_link <- "https://resources.oreilly.com/examples/9781784393908/raw/ac9fe41596dd42fc3877cfa8ed410dd346c43548/Machine%20Learning%20with%20R,%20Second%20Edition_Code/Chapter%2003/wisc_bc_data.csv"
 bcd <- read.csv(cancer_link)
 
 
-my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", normalize = TRUE, verbose = TRUE){
+my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", normalize = TRUE, verbose = FALSE){
   # Normalizing if the user so says...
   if(normalize){
     train_data = as.data.frame(lapply(train_data, scale, center = TRUE, scale = TRUE))
@@ -42,7 +44,6 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
     # using lapply, which is orders of magnitude faster.
     distances = lapply(rbinds, distance, metric)
     
-    
     # Having the distances vector, we join it with our labels
     # to create a little helper dataframe and set its colnames.
     results = data.frame(as.vector(distances, "numeric"), as.vector(train_labels))
@@ -65,15 +66,15 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
   return(prediction)
 }
 
-eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by=2), methods=c("euclidean", "manhattan"), verbose = 2){
-  method = vector(length = length(methods) * length(k_neighbors))
+eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by=2), metrics = c("euclidean", "manhattan"), verbose = 1){
+  methods = vector(length = length(methods) * length(k_neighbors))
   k_values = vector(length = length(methods) * length(k_neighbors))
   accuracies = vector(length = length(methods) * length(k_neighbors))
   
   i = 0
-  for(method in methods){
+  for(m in metrics){
     if(verbose >= 1){
-      print(paste("Going for method", method))
+      print(paste("Going for method", m))
     }
     
     for(k in k_neighbors){
@@ -81,19 +82,19 @@ eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by
         print(paste("Going for k", k))
       }
       
-      prediction = my_knn(train_data, train_labels, test=test, k=k, metric=method)
+      prediction = my_knn(train_data, train_labels, test=test, k=k, metric=m)
       pred_diag = data.frame(prediction, train_labels)
       colnames(pred_diag) = c("prediction", "labels")
-      
+
       accuracy = (pred_diag %>% filter(prediction == labels) %>% count()) / dim(pred_diag[,0])
 
       accuracies[i] = accuracy
       k_values[i] = k
-      method[i] = method
+      methods[i] = m
       i = i + 1
     }
   }
-  results = data.frame(method, k_values, accuracies)
+  results = data.frame(methods, k_values, accuracies)
   colnames(results) = c("Method", "K", "Accuracy")
   print(results)
   plot(results)
@@ -104,7 +105,7 @@ eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by
 # prediction = my_knn(iris[1:(length(iris)-1)], iris$Species, verbose = TRUE)
 
 # eval_knn(iris[1:(length(iris)-1)], iris$Species)
-eval_knn(bcd[1:50, 3:(length(bcd)-1)], bcd$diagnosis)
+suppressMessages(eval_knn(bcd[1:50, 3:(length(bcd)-1)], bcd$diagnosis[1:50], metrics = c("manhattan", "pearson", "euclidean")))
 
 
 
