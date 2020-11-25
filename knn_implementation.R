@@ -2,9 +2,11 @@
   
 
 
-# library(tidyverse)
+library(tidyverse)
 library(dplyr)
 library(philentropy)
+library(reshape)
+
 # library(caret)
 
 Sys.setenv(LANGUAGE='en')
@@ -66,12 +68,12 @@ my_knn <- function(train_data, train_labels, test=NA, k=7, metric="euclidean", n
   return(prediction)
 }
 
-eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by=2), metrics = c("euclidean", "manhattan"), verbose = 1){
-  methods = vector(length = length(methods) * length(k_neighbors))
-  k_values = vector(length = length(methods) * length(k_neighbors))
-  accuracies = vector(length = length(methods) * length(k_neighbors))
+eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by=2), metrics = c("euclidean", "manhattan"), verbose = 1, plot = TRUE){
+  methods = vector("logical", length = (length(metrics) * length(k_neighbors)))
+  k_values = vector("logical", length = (length(metrics) * length(k_neighbors)))
+  accuracies = vector("numeric", length = (length(metrics) * length(k_neighbors)))
   
-  i = 0
+  i = 1
   for(m in metrics){
     if(verbose >= 1){
       print(paste("Going for method", m))
@@ -87,25 +89,28 @@ eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by
       colnames(pred_diag) = c("prediction", "labels")
 
       accuracy = (pred_diag %>% filter(prediction == labels) %>% count()) / dim(pred_diag[,0])
-
+      
+      
       accuracies[i] = accuracy
       k_values[i] = k
       methods[i] = m
       i = i + 1
     }
   }
-  results = data.frame(methods, k_values, accuracies)
+
+  results = data.frame(cbind(methods, k_values, accuracies))
   colnames(results) = c("Method", "K", "Accuracy")
-  print(results)
-  plot(results)
+  
+  if(plot){
+    ggplot(results, aes(x = K, y = Accuracy, group = Method)) +
+      geom_line(aes(color = Method)) + 
+      geom_point(aes(color = Method))
+  }
+  return(results)
 }
 
 
-# prediction = my_knn(bcd[3:(length(bcd)-1)], bcd$diagnosis, metric = "euclidean")
-# prediction = my_knn(iris[1:(length(iris)-1)], iris$Species, verbose = TRUE)
+results = suppressMessages(eval_knn(bcd[1:50, 3:(length(bcd)-1)], bcd$diagnosis[1:50], metrics = c("pearson", "euclidean", "manhattan")))
 
-# eval_knn(iris[1:(length(iris)-1)], iris$Species)
-suppressMessages(eval_knn(bcd[1:50, 3:(length(bcd)-1)], bcd$diagnosis[1:50], metrics = c("manhattan", "pearson", "euclidean")))
-
-
+  
 
