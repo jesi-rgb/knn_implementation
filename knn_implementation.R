@@ -107,3 +107,4 @@ eval_knn <- function(train_data, train_labels, test=NA, k_neighbors=seq(5, 9, by
 results = suppressMessages(eval_knn(bcd[1:50, 3:(length(bcd)-1)], bcd$diagnosis[1:50], k_neighbors=seq(5, 19, by=2), metrics = c("pearson", "euclidean", "manhattan")))
 
 
+
